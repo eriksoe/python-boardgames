@@ -42,15 +42,19 @@ class GuiBoard:
         c.bind("<B1-Motion>", self.onBoardDrag)
         c.bind("<ButtonRelease-1>", self.onBoardReleased)
         c.bind("<Motion>", self.onBoardMotion)
+        c.bind("<Leave>", self.onBoardLeave)
 
         self._app = app
         self._canvas = c
 
+        self._mouseOver = None
+
     def onBoardClicked(self, event):
         print("onBoardClicked(%s; %s,%s)" % (event, event.x, event.y))
-        (x,y) = (event.x, event.y)
-        bx = int(x / GuiBoard.SQR_SIZE)
-        by = int(y / GuiBoard.SQR_SIZE)
+        (bx, by) = self.eventSquare(event)
+        # (x,y) = (event.x, event.y)
+        # bx = int(x / GuiBoard.SQR_SIZE)
+        # by = int(y / GuiBoard.SQR_SIZE)
         print("Square clicked: %d,%d" % (bx,by))
 
     def onBoardDoubleClicked(self, event):
@@ -60,7 +64,20 @@ class GuiBoard:
     def onBoardReleased(self, event):
         print("onBoardReleased(%d,%d)" % (event.x, event.y))
     def onBoardMotion(self, event):
-        print("onBoardMotion(%d,%d)" % (event.x, event.y))
+        self.setMouseOver(self.eventSquare(event))
+    def onBoardLeave(self, event):
+        self.setMouseOver(None)
+
+    def eventSquare(self, event):
+        bx = int(event.x / GuiBoard.SQR_SIZE)
+        by = int(event.y / GuiBoard.SQR_SIZE)
+        return (bx,by)
+
+    def setMouseOver(self, pos):
+        if pos == self._mouseOver:
+            return
+        self._mouseOver = pos
+        self.redraw()
 
     def redraw(self):
         size = GuiBoard.SQR_SIZE
@@ -74,6 +91,12 @@ class GuiBoard:
                 color = "#f99" if parity else "#99f"
                 app.addCanvasRectangle("c", x*size, y*size, size, size,
                                        width=0, fill=color)
+
+        if self._mouseOver != None:
+            (mx, my) = self._mouseOver
+            color = "#090"
+            app.addCanvasRectangle("c", mx*size, my*size, size, size,
+                                   width=2, outline=color, fill=None)
 
 
 
