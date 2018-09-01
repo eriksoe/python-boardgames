@@ -4,7 +4,7 @@ from appJar.appjar import gui
 app = None
 def main():
     global app
-    app = gui("ChromoDynamics", "600x400")
+    app = gui("ChromoDynamics", "600x450")
     board = createMainWindow(app)
     board.redraw()
     app.go()
@@ -28,7 +28,7 @@ def createMainWindow(app):
     return board
 
 class GuiBoard:
-    SQR_SIZE = 40
+    SQR_SIZE = 48
 
     def __init__(self, app):
         c = app.addCanvas("c")
@@ -51,14 +51,13 @@ class GuiBoard:
 
     def onBoardClicked(self, event):
         print("onBoardClicked(%s; %s,%s)" % (event, event.x, event.y))
-        (bx, by) = self.eventSquare(event)
         # (x,y) = (event.x, event.y)
         # bx = int(x / GuiBoard.SQR_SIZE)
         # by = int(y / GuiBoard.SQR_SIZE)
-        print("Square clicked: %d,%d" % (bx,by))
 
     def onBoardDoubleClicked(self, event):
         print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+
     def onBoardDrag(self, event):
         print("onBoardDrag(%d,%d)" % (event.x, event.y))
     def onBoardReleased(self, event):
@@ -85,12 +84,26 @@ class GuiBoard:
         c = self._canvas
         app.clearCanvas("c")
 
+        dark_img = "../gfx/dark-square.png"
+        light_img = "../gfx/light-square.png"
+        dark_pawn_img = "../gfx/black-pawn.png"
+        light_pawn_img = "../gfx/white-pawn.png"
         for y in xrange(8):
             for x in xrange(8):
                 parity = ((x+y) & 1) > 0
                 color = "#f99" if parity else "#99f"
-                app.addCanvasRectangle("c", x*size, y*size, size, size,
-                                       width=0, fill=color)
+                img = dark_img if parity else light_img
+                # app.addCanvasRectangle("c", x*size, y*size, size, size,
+                #                        width=0, fill=color)
+                app.addCanvasImage("c", x*size, y*size,
+                                   img, anchor="nw")
+
+        for y in xrange(8):
+            for x in xrange(8):
+                img = dark_pawn_img if y==1 else light_pawn_img if y==6 else None
+                if img==None: continue
+                app.addCanvasImage("c", x*size, y*size,
+                                   img, anchor="nw")
 
         if self._mouseOver != None:
             (mx, my) = self._mouseOver
