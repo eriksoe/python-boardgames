@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 from appJar.appjar import gui
 
+SQR_SIZE = 40
+
+app = None
 def main():
+    global app
     app = gui("ChromoDynamics", "600x400")
     createMainWindow(app)
     drawBoard(app)
@@ -27,7 +31,11 @@ def createMainWindow(app):
     #app.setCanvasInPadding("c", (2,5))
     #app.setCanvasPadding("c", (4,10))
     #app.setCanvasEvent("c", item, event, function, add=None)
-    app.setCanvasDragFunction("c", (onStartDrag, onStopDrag))
+    c.bind("<Button-1>", onBoardClicked)
+    c.bind("<Double-Button-1>", onBoardDoubleClicked)
+    c.bind("<B1-Motion>", onBoardDrag)
+    c.bind("<ButtonRelease-1>", onBoardReleased)
+    c.bind("<Motion>", onBoardMotion)
 
     app.stopLabelFrame()
 
@@ -36,20 +44,30 @@ def createMainWindow(app):
 def drawBoard(app):
     c = app.getCanvas("c")
     app.clearCanvas("c")
-    size = 40
-    c.create_line(0,0, 8*size, 8*size)
 
     for y in xrange(8):
         for x in xrange(8):
             parity = ((x+y) & 1) > 0
             color = "#f99" if parity else "#99f"
-            # app.addCanvasRectangle("c", x*size, y*size, size, size,
-            #                        width=0, fill=color)
+            app.addCanvasRectangle("c", x*SQR_SIZE, y*SQR_SIZE, SQR_SIZE, SQR_SIZE,
+                                   width=0, fill=color)
 
 
-def onStartDrag(event):
-    print("onStartDrag(%s)" % (event,))
-def onStopDrag(event):
-    print("onStop(%s)" % (event,))
+def onBoardClicked(event):
+    print("onBoardClicked(%s; %s,%s)" % (event, event.x, event.y))
+    (x,y) = (event.x, event.y)
+    bx = int(x / SQR_SIZE)
+    by = int(y / SQR_SIZE)
+    print("Square clicked: %d,%d" % (bx,by))
+
+def onBoardDoubleClicked(event):
+    print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+def onBoardDrag(event):
+    print("onBoardDrag(%d,%d)" % (event.x, event.y))
+def onBoardReleased(event):
+    print("onBoardReleased(%d,%d)" % (event.x, event.y))
+def onBoardMotion(event):
+    print("onBoardMotion(%d,%d)" % (event.x, event.y))
+
 
 main()
