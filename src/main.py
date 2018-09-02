@@ -5,11 +5,13 @@ app = None
 def main():
     global app
     app = gui("ChromoDynamics", "600x450")
-    board = createMainWindow(app)
-    board.redraw()
+    board = Board()
+    board.setup()
+    guiboard = createMainWindow(app, board)
+    guiboard.redraw()
     app.go()
 
-def createMainWindow(app):
+def createMainWindow(app, board):
     app.startFrame("MENU", row=0, column=0)
     app.setBg("#ddd")
     app.setSticky("NEW")
@@ -21,16 +23,48 @@ def createMainWindow(app):
     app.startLabelFrame("Board", row=0, column=1)
     app.setSticky("")
 
-    board = GuiBoard(app)
+    guiboard = GuiBoard(app, board)
 
     app.stopLabelFrame()
 
-    return board
+    return guiboard
+
+class Color:
+    def __init__(self, name):
+        self.name = name
+
+    def pawn_img(self):
+        return "../gfx/%s-pawn.png" % (self.name,)
+
+WHITE = Color("white")
+BLACK = Color("black")
+
+class Board:
+    def __init__(self):
+        self.board = [[None for x in xrange(8)] for y in xrange(8)]
+
+    def get(self, x, y):
+        return self.board[y][x]
+
+    def move(self, pos1, pos2):
+        (x1,y1) = pos1
+        (x2, y2) = pos2
+        self.board[y2][x2] = self.board[y1][x1]
+        self.board[y1][x1] = None
+
+    def setup(self):
+        self.board = [[None for x in xrange(8)] for y in xrange(8)]
+        for x in xrange(8):
+            self.board[1][x] = WHITE
+            self.board[6][x] = BLACK
 
 class GuiBoard:
     SQR_SIZE = 48
 
-    def __init__(self, app):
+    def __init__(self, app, board):
+        self._app = app
+        self._board = board
+
         c = app.addCanvas("c")
         app.setCanvasWidth("c", 8 * GuiBoard.SQR_SIZE)
         app.setCanvasHeight("c", 8 * GuiBoard.SQR_SIZE)
@@ -44,16 +78,33 @@ class GuiBoard:
         c.bind("<Motion>", self.onBoardMotion)
         c.bind("<Leave>", self.onBoardLeave)
 
-        self._app = app
         self._canvas = c
 
         self._mouseOver = None
+        self._from = None
 
     def onBoardClicked(self, event):
         print("onBoardClicked(%s; %s,%s)" % (event, event.x, event.y))
-        # (x,y) = (event.x, event.y)
-        # bx = int(x / GuiBoard.SQR_SIZE)
-        # by = int(y / GuiBoard.SQR_SIZE)
+        pos = self.eventSquare(event)
+        if self._from == None:
+            self._from = pos
+            self.redraw()
+        else:
+            self._board.move(self._from, pos)
+            self._from = None
+            self.redraw()
+
+    def onBoardDoubleClicked(self, event):
+        print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+
+    def onBoardDrag(self, event):
+        print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
+
+    def onBoardDoubleClicked(self, event):
+        print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+
+    def onBoardDrag(self, event):
+        print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
 
     def onBoardDoubleClicked(self, event):
         print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
@@ -70,7 +121,7 @@ class GuiBoard:
     def eventSquare(self, event):
         bx = int(event.x / GuiBoard.SQR_SIZE)
         by = int(event.y / GuiBoard.SQR_SIZE)
-        return (bx,by)
+        return (bx, 7-by)
 
     def setMouseOver(self, pos):
         if pos == self._mouseOver:
@@ -86,8 +137,8 @@ class GuiBoard:
 
         dark_img = "../gfx/dark-square.png"
         light_img = "../gfx/light-square.png"
-        dark_pawn_img = "../gfx/black-pawn.png"
-        light_pawn_img = "../gfx/white-pawn.png"
+        #black_pawn_img = "../gfx/black-pawn.png"
+        #white_pawn_img = "../gfx/white-pawn.png"
         for y in xrange(8):
             for x in xrange(8):
                 parity = ((x+y) & 1) > 0
@@ -100,13 +151,21 @@ class GuiBoard:
 
         for y in xrange(8):
             for x in xrange(8):
-                img = dark_pawn_img if y==1 else light_pawn_img if y==6 else None
-                if img==None: continue
+                b = self._board.get(x, 7-y)
+                if b==None: continue
+                img = b.pawn_img()
                 app.addCanvasImage("c", x*size, y*size,
                                    img, anchor="nw")
 
+        if self._from != None:
+            (mx, my) = self._from
+            my = 7-my
+            color = "#ee0"
+            app.addCanvasRectangle("c", mx*size, my*size, size, size,
+                                   width=3, outline=color, fill=None)
         if self._mouseOver != None:
             (mx, my) = self._mouseOver
+            my = 7-my
             color = "#090"
             app.addCanvasRectangle("c", mx*size, my*size, size, size,
                                    width=2, outline=color, fill=None)
