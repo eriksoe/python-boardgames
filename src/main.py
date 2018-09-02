@@ -44,14 +44,15 @@ class Color:
     def homeRow(self):
         return self._homeRow
 
+    def __str__(self):
+        return self.name
+
 WHITE = Color("white", 1)
 BLACK = Color("black", -1)
 
 class Board:
     def __init__(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
-        self.turnNr = 0
-        self._moves = None
 
     def get(self, x, y):
         return self.board[y][x]
@@ -63,12 +64,16 @@ class Board:
         self.board[y1][x1] = None
         self.turnNr += 1
         self._moves = None
+        self.nextPlayer = WHITE if self.nextPlayer == BLACK else BLACK
 
     def setup(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
         for x in xrange(8):
             self.board[1][x] = WHITE
             self.board[6][x] = BLACK
+        self.turnNr = 0
+        self._moves = None
+        self.nextPlayer = WHITE
 
     def possibleMoves(self):
         if self._moves == None:
@@ -81,7 +86,7 @@ class Board:
         for y in xrange(8):
             for x in xrange(8):
                 p = self.board[y][x]
-                if p == None:
+                if p != self.nextPlayer:
                     continue
                 dy = p.forwardY()
                 # Add normal moves:
@@ -146,7 +151,7 @@ class GuiBoard:
         piece = self._board.get(pos[0],pos[1])
         if self._from == None:
             # Select
-            if piece != None:
+            if piece == self._board.nextPlayer:
                 self._from = pos
                 self.redraw()
         else:
@@ -233,11 +238,12 @@ class GuiBoard:
                                    width=3, outline=color, fill=None)
         if self._mouseOver != None:
             (mx, my) = self._mouseOver
-            my = 7-my
             color = "#090"
             if self._from != None and Move(self._from, self._mouseOver) in self._board.possibleMoves():
                 color = "#ee0" # Possible move
-            app.addCanvasRectangle("c", mx*size, my*size, size, size,
+            elif self._board.get(mx, my) == self._board.nextPlayer:
+                color = "#cc0" # Possible piece to move
+            app.addCanvasRectangle("c", mx*size, (7-my)*size, size, size,
                                    width=2, outline=color, fill=None)
 
 
