@@ -30,33 +30,91 @@ def createMainWindow(app, board):
     return guiboard
 
 class Color:
-    def __init__(self, name):
+    def __init__(self, name, dy):
         self.name = name
+        self._dy = dy
+        self._homeRow = int((7 - 5*dy)/2)
 
     def pawn_img(self):
         return "../gfx/%s-pawn.png" % (self.name,)
 
-WHITE = Color("white")
-BLACK = Color("black")
+    def forwardY(self):
+        return self._dy
+
+    def homeRow(self):
+        return self._homeRow
+
+WHITE = Color("white", 1)
+BLACK = Color("black", -1)
 
 class Board:
     def __init__(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
+        self.turnNr = 0
+        self._moves = None
 
     def get(self, x, y):
         return self.board[y][x]
 
-    def move(self, pos1, pos2):
-        (x1,y1) = pos1
-        (x2, y2) = pos2
+    def move(self, m):
+        (x1,y1) = m.src
+        (x2, y2) = m.dst
         self.board[y2][x2] = self.board[y1][x1]
         self.board[y1][x1] = None
+        self.turnNr += 1
+        self._moves = None
 
     def setup(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
         for x in xrange(8):
             self.board[1][x] = WHITE
             self.board[6][x] = BLACK
+
+    def possibleMoves(self):
+        if self._moves == None:
+            self._moves = self._generateMoves()
+        return self._moves
+
+    def _generateMoves(self):
+        # For now, we generate for both colors.
+        moves = []
+        for y in xrange(8):
+            for x in xrange(8):
+                p = self.board[y][x]
+                if p == None:
+                    continue
+                dy = p.forwardY()
+                # Add normal moves:
+                y1 = y + dy
+                if y1<0 or y1>=8: continue
+                if self.board[y1][x] == None:
+                    moves.append(Move((x,y), (x,y1)))
+                    if y == p.homeRow():
+                        y2 = y1 + dy
+                        if y2<0 or y2>=8: continue
+                        if self.board[y2][x] == None:
+                            moves.append(Move((x,y), (x,y2)))
+                # Add taking moves:
+                x1 = x+1
+                if x1<8:
+                    p2 = self.board[y1][x1]
+                    if p2!=None and p2!=p:
+                        moves.append(Move((x,y), (x1,y1)))
+
+                x1 = x-1
+                if x1>=0:
+                    p2 = self.board[y1][x1]
+                    if p2!=None and p2!=p:
+                        moves.append(Move((x,y), (x1,y1)))
+        return moves
+
+class Move:
+    def __init__(self, src, dst):
+        self.src = src
+        self.dst = dst
+
+    def __eq__(self, other):
+        return self.src == other.src and self.dst == other.dst
 
 class GuiBoard:
     SQR_SIZE = 48
@@ -84,36 +142,45 @@ class GuiBoard:
         self._from = None
 
     def onBoardClicked(self, event):
-        print("onBoardClicked(%s; %s,%s)" % (event, event.x, event.y))
         pos = self.eventSquare(event)
+        piece = self._board.get(pos[0],pos[1])
         if self._from == None:
-            if self._board.get(pos[0],pos[1]) != None:
+            # Select
+            if piece != None:
                 self._from = pos
                 self.redraw()
         else:
-            self._board.move(self._from, pos)
-            self._from = None
-            self.redraw()
+            #self._board.move(Move(self._from, pos))
+            theMove = Move(self._from, pos)
+            if theMove in self._board.possibleMoves():
+                self._board.move(theMove)
+                self._from = None
+                self.redraw()
+            else:
+                # Unselect
+                self._from = None
+                self.redraw()
 
     def onBoardDoubleClicked(self, event):
-        print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+        pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
 
     def onBoardDrag(self, event):
-        print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
+        pass #print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
 
     def onBoardDoubleClicked(self, event):
-        print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+        pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
 
     def onBoardDrag(self, event):
-        print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
+        pass #print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
 
     def onBoardDoubleClicked(self, event):
-        print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+        self.onBoardClicked(event)
+        pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
 
-    def onBoardDrag(self, event):
-        print("onBoardDrag(%d,%d)" % (event.x, event.y))
+    # def onBoardDrag(self, event):
+    #     pass #print("onBoardDrag(%d,%d)" % (event.x, event.y))
     def onBoardReleased(self, event):
-        print("onBoardReleased(%d,%d)" % (event.x, event.y))
+        pass #print("onBoardReleased(%d,%d)" % (event.x, event.y))
     def onBoardMotion(self, event):
         self.setMouseOver(self.eventSquare(event))
     def onBoardLeave(self, event):
@@ -168,6 +235,8 @@ class GuiBoard:
             (mx, my) = self._mouseOver
             my = 7-my
             color = "#090"
+            if self._from != None and Move(self._from, self._mouseOver) in self._board.possibleMoves():
+                color = "#ee0" # Possible move
             app.addCanvasRectangle("c", mx*size, my*size, size, size,
                                    width=2, outline=color, fill=None)
 
