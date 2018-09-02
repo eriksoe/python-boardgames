@@ -87,8 +87,9 @@ class GuiBoard:
         print("onBoardClicked(%s; %s,%s)" % (event, event.x, event.y))
         pos = self.eventSquare(event)
         if self._from == None:
-            self._from = pos
-            self.redraw()
+            if self._board.get(pos[0],pos[1]) != None:
+                self._from = pos
+                self.redraw()
         else:
             self._board.move(self._from, pos)
             self._from = None
