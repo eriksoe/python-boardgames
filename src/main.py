@@ -2,13 +2,19 @@
 from appJar.appjar import gui
 
 app = None
+board = None
+guiBoard = None
+
 def main():
     global app
+    global board
+    global guiBoard
+
     app = gui("ChromoDynamics", "600x450")
     board = Board()
-    board.setup()
-    guiboard = createMainWindow(app, board)
-    guiboard.redraw()
+    #board.setup()
+    guiBoard = createMainWindow(app, board)
+    guiBoard.redraw()
     app.go()
 
 def createMainWindow(app, board):
@@ -17,7 +23,8 @@ def createMainWindow(app, board):
     app.setSticky("NEW")
     app.setStretch("COLUMN")
 
-    app.addLabel("l1", "<menu>")
+    app.addLabel("l1", "Menu")
+    app.addButton("New game", newGameAction)
     app.stopFrame()
 
     app.startLabelFrame("Board", row=0, column=1)
@@ -28,6 +35,10 @@ def createMainWindow(app, board):
     app.stopLabelFrame()
 
     return guiboard
+
+def newGameAction(btn):
+    board.setup()
+    guiBoard.redraw()
 
 class Color:
     def __init__(self, name, dy):
@@ -44,6 +55,11 @@ class Color:
     def homeRow(self):
         return self._homeRow
 
+    def turnIcon(self):
+        return "../gfx/%s-circle.png" % (self.name,)
+    def wonIcon(self):
+        return "../gfx/%s-circle-glow2.png" % (self.name,)
+
     def __str__(self):
         return self.name
 
@@ -53,6 +69,7 @@ BLACK = Color("black", -1)
 class Board:
     def __init__(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
+        self.nextPlayer = None
 
     def get(self, x, y):
         return self.board[y][x]
@@ -121,6 +138,15 @@ class Move:
     def __eq__(self, other):
         return self.src == other.src and self.dst == other.dst
 
+class Icons:
+    empty_icon = "../gfx/empty.png"
+    idle_icon = "../gfx/idle.png"
+    white_turn_icon = "../gfx/white-circle.png"
+    black_turn_icon = "../gfx/black-circle.png"
+    white_won_icon = "../gfx/white-circle-glow2.png"
+    black_won_icon = "../gfx/black-circle-glow2.png"
+
+
 class GuiBoard:
     SQR_SIZE = 48
 
@@ -143,10 +169,19 @@ class GuiBoard:
 
         self._canvas = c
 
+        app.startFrame("stateIconsFrame", row=0, column=1)
+        stateCanvas = app.addCanvas("stateCanvas")
+        app.setCanvasWidth("stateCanvas", 36)
+        app.setCanvasHeight("stateCanvas", 3*36)
+        app.stopFrame()
+        self._stateCanvas = stateCanvas
+
         self._mouseOver = None
         self._from = None
 
     def onBoardClicked(self, event):
+        if self._board.nextPlayer==None:
+            return
         pos = self.eventSquare(event)
         piece = self._board.get(pos[0],pos[1])
         if self._from == None:
@@ -208,6 +243,8 @@ class GuiBoard:
         c = self._canvas
         app.clearCanvas("c")
 
+        self.updateIcon()
+
         dark_img = "../gfx/dark-square.png"
         light_img = "../gfx/light-square.png"
         #black_pawn_img = "../gfx/black-pawn.png"
@@ -246,6 +283,28 @@ class GuiBoard:
             app.addCanvasRectangle("c", mx*size, (7-my)*size, size, size,
                                    width=2, outline=color, fill=None)
 
+    def updateIcon(self):
+        curPlayer = self._board.nextPlayer
 
+        id = "stateCanvas"
+        app.clearCanvas(id)
+        c = self._stateCanvas
+
+        app.addCanvasCircle(id, 0, 0, 36, fill="#999", outline="#999")
+        app.addCanvasCircle(id, 0, 72, 36, fill="#999", outline="#999")
+        app.addCanvasRectangle(id, 0, 18, 36, 2*36, fill="#999", outline="#999")
+
+        (x,y,icon) = (0,0, Icons.empty_icon)
+        if curPlayer==WHITE:
+            y = 2*36
+            icon = Icons.white_turn_icon
+        elif curPlayer==BLACK:
+            y = 0
+            icon = Icons.black_turn_icon
+        else:
+            y = 36
+            icon = Icons.idle_icon
+
+        app.addCanvasImage(id, x, y, icon, anchor="nw")
 
 main()
