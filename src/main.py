@@ -244,27 +244,28 @@ class GuiBoard:
         self.redraw()
 
     def redraw(self):
-        size = GuiBoard.SQR_SIZE
         app = self._app
         c = self._canvas
         app.clearCanvas("c")
 
         self.updateIcon()
+        self._drawBoardBackground()
+        self._drawBoardPieces()
+        self._drawSquareHighlights()
 
+    def _drawBoardBackground(self):
+        size = GuiBoard.SQR_SIZE
         dark_img = "../gfx/dark-square.png"
         light_img = "../gfx/light-square.png"
-        #black_pawn_img = "../gfx/black-pawn.png"
-        #white_pawn_img = "../gfx/white-pawn.png"
         for y in xrange(8):
             for x in xrange(8):
                 parity = ((x+y) & 1) > 0
-                color = "#f99" if parity else "#99f"
                 img = dark_img if parity else light_img
-                # app.addCanvasRectangle("c", x*size, y*size, size, size,
-                #                        width=0, fill=color)
                 app.addCanvasImage("c", x*size, y*size,
                                    img, anchor="nw")
 
+    def _drawBoardPieces(self):
+        size = GuiBoard.SQR_SIZE
         for y in xrange(8):
             for x in xrange(8):
                 b = self._board.get(x, 7-y)
@@ -273,6 +274,8 @@ class GuiBoard:
                 app.addCanvasImage("c", x*size, y*size,
                                    img, anchor="nw")
 
+    def _drawSquareHighlights(self):
+        size = GuiBoard.SQR_SIZE
         if self._from != None:
             (mx, my) = self._from
             my = 7-my
@@ -284,7 +287,7 @@ class GuiBoard:
             color = "#090"
             if self._from != None and Move(self._from, self._mouseOver) in self._board.possibleMoves():
                 color = "#ee0" # Possible move
-            elif self._board.get(mx, my) == self._board.nextPlayer:
+            elif self._board.nextPlayer != None and self._board.get(mx, my) == self._board.nextPlayer:
                 color = "#cc0" # Possible piece to move
             app.addCanvasRectangle("c", mx*size, (7-my)*size, size, size,
                                    width=2, outline=color, fill=None)
