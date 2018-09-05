@@ -14,9 +14,10 @@ class Icons:
 class GuiBoard:
     SQR_SIZE = 48
 
-    def __init__(self, app, board):
+    def __init__(self, app, board, players):
         self._app = app
         self._board = board
+        self._players = players
 
         c = app.addCanvas("c")
         app.setCanvasWidth("c", 8 * GuiBoard.SQR_SIZE)
@@ -41,28 +42,24 @@ class GuiBoard:
         self._stateCanvas = stateCanvas
 
         self._mouseOver = None
-        self._from = None
+
+    def setPlayers(self, players):
+        self._players = players
+
+    def playerOfColor(self, color):
+        if color==None: return None
+        return self._players[color.index]
+
+    def currentPlayer(self):
+        curPlayerColor = self._board.nextPlayer
+        return self.playerOfColor(curPlayerColor)
 
     def onBoardClicked(self, event):
-        if self._board.nextPlayer==None:
-            return
-        pos = self.eventSquare(event)
-        piece = self._board.get(pos[0],pos[1])
-        if self._from == None:
-            # Select
-            if piece == self._board.nextPlayer:
-                self._from = pos
-                self.redraw()
-        else:
-            #self._board.move(Move(self._from, pos))
-            theMove = Move(self._from, pos)
-            if theMove in self._board.possibleMoves():
-                self._board.move(theMove)
-                self._from = None
-                self.redraw()
-            else:
-                # Unselect
-                self._from = None
+        curPlayer = self.currentPlayer()
+        if curPlayer != None:
+            pos = self.eventSquare(event)
+            change = curPlayer.onBoardClickedOnTurn(pos)
+            if change:
                 self.redraw()
 
     def onBoardDoubleClicked(self, event):
@@ -138,25 +135,13 @@ class GuiBoard:
         size = GuiBoard.SQR_SIZE
         app = self._app
 
-        if self._from != None:
-            (mx, my) = self._from
-            my = 7-my
-            color = "#ee0"
-            app.addCanvasRectangle("c", mx*size, my*size, size, size,
-                                   width=3, outline=color, fill=None)
-        if self._mouseOver != None:
-            (mx, my) = self._mouseOver
-            color = "#090"
-            if self._from != None and Move(self._from, self._mouseOver) in self._board.possibleMoves():
-                color = "#ee0" # Possible move
-            elif self._board.nextPlayer != None and self._board.get(mx, my) == self._board.nextPlayer:
-                color = "#cc0" # Possible piece to move
-            app.addCanvasRectangle("c", mx*size, (7-my)*size, size, size,
-                                   width=2, outline=color, fill=None)
+        curPlayer = self.currentPlayer()
+        if curPlayer != None:
+            curPlayer.drawHighlightsOnTurn(app, "c", size, self._mouseOver)
 
     def updateIcon(self):
         app = self._app
-        curPlayer = self._board.nextPlayer
+        curPlayerColor = self._board.nextPlayer
 
         id = "stateCanvas"
         app.clearCanvas(id)
@@ -167,10 +152,10 @@ class GuiBoard:
         app.addCanvasRectangle(id, 0, 18, 36, 2*36, fill="#999", outline="#999")
 
         (x,y,icon) = (0,0, Icons.empty_icon)
-        if curPlayer==WHITE:
+        if curPlayerColor==WHITE:
             y = 2*36
             icon = Icons.white_turn_icon
-        elif curPlayer==BLACK:
+        elif curPlayerColor==BLACK:
             y = 0
             icon = Icons.black_turn_icon
         else:

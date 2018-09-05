@@ -1,6 +1,7 @@
 class Color:
-    def __init__(self, name, dy):
+    def __init__(self, name, index, dy):
         self.name = name
+        self.index = index
         self._dy = dy
         self._homeRow = int((7 - 5*dy)/2)
 
@@ -21,8 +22,8 @@ class Color:
     def __str__(self):
         return self.name
 
-WHITE = Color("white", 1)
-BLACK = Color("black", -1)
+WHITE = Color("white", 0, 1)
+BLACK = Color("black", 1, -1)
 
 class Board:
     def __init__(self):
