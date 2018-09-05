@@ -58,7 +58,7 @@ class Color:
     def turnIcon(self):
         return "../gfx/%s-circle.png" % (self.name,)
     def wonIcon(self):
-        return "../gfx/%s-circle-glow2.png" % (self.name,)
+        return "../gfx/%s-circle-glow.png" % (self.name,)
 
     def __str__(self):
         return self.name
@@ -70,6 +70,7 @@ class Board:
     def __init__(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
         self.nextPlayer = None
+        self.winner = None
 
     def get(self, x, y):
         return self.board[y][x]
@@ -81,7 +82,12 @@ class Board:
         self.board[y1][x1] = None
         self.turnNr += 1
         self._moves = None
-        self.nextPlayer = WHITE if self.nextPlayer == BLACK else BLACK
+        won = (y2==7) if self.nextPlayer == WHITE else (y2==0)
+        if won:
+            self.winner = self.nextPlayer
+            self.nextPlayer = None
+        else:
+            self.nextPlayer = WHITE if self.nextPlayer == BLACK else BLACK
 
     def setup(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
@@ -302,8 +308,16 @@ class GuiBoard:
             y = 0
             icon = Icons.black_turn_icon
         else:
-            y = 36
-            icon = Icons.idle_icon
+            winner = self._board.winner
+            if winner==WHITE:
+                y = 2*36
+                icon = Icons.white_won_icon
+            elif winner==BLACK:
+                y = 0
+                icon = Icons.black_won_icon
+            else:
+                y = 36
+                icon = Icons.idle_icon
 
         app.addCanvasImage(id, x, y, icon, anchor="nw")
 
