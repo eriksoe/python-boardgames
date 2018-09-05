@@ -1,12 +1,15 @@
 from board import Move, Color, WHITE, BLACK
 
 class Icons:
-    empty_icon = "../gfx/empty.png"
-    idle_icon = "../gfx/idle.png"
-    white_turn_icon = "../gfx/white-circle.png"
-    black_turn_icon = "../gfx/black-circle.png"
-    white_won_icon = "../gfx/white-circle-glow2.png"
-    black_won_icon = "../gfx/black-circle-glow2.png"
+    dark_square_img = "gfx/dark-square.png"
+    light_square_img = "gfx/light-square.png"
+
+    empty_icon = "gfx/empty.png"
+    idle_icon = "gfx/idle.png"
+    white_turn_icon = "gfx/white-circle.png"
+    black_turn_icon = "gfx/black-circle.png"
+    white_won_icon = "gfx/white-circle-glow2.png"
+    black_won_icon = "gfx/black-circle-glow2.png"
 
 class GuiBoard:
     SQR_SIZE = 48
@@ -112,12 +115,10 @@ class GuiBoard:
         size = GuiBoard.SQR_SIZE
         app = self._app
 
-        dark_img = "../gfx/dark-square.png"
-        light_img = "../gfx/light-square.png"
         for y in xrange(8):
             for x in xrange(8):
                 parity = ((x+y) & 1) > 0
-                img = dark_img if parity else light_img
+                img = Icons.dark_square_img if parity else Icons.light_square_img
                 app.addCanvasImage("c", x*size, y*size,
                                    img, anchor="nw")
 

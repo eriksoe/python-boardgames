@@ -5,7 +5,7 @@ class Color:
         self._homeRow = int((7 - 5*dy)/2)
 
     def pawn_img(self):
-        return "../gfx/%s-pawn.png" % (self.name,)
+        return "gfx/%s-pawn.png" % (self.name,)
 
     def forwardY(self):
         return self._dy
@@ -14,9 +14,9 @@ class Color:
         return self._homeRow
 
     def turnIcon(self):
-        return "../gfx/%s-circle.png" % (self.name,)
+        return "gfx/%s-circle.png" % (self.name,)
     def wonIcon(self):
-        return "../gfx/%s-circle-glow.png" % (self.name,)
+        return "gfx/%s-circle-glow.png" % (self.name,)
 
     def __str__(self):
         return self.name
