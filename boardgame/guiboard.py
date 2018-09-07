@@ -46,6 +46,23 @@ class GuiBoard:
     def setPlayers(self, players):
         self._players = players
 
+    def resetGame(self):
+        for p in self._players:
+            p.resetGame(self._board)
+        self.redraw()
+
+        p = self.currentPlayer()
+        if p != None: self.currentPlayer().enterTurn(self._performMove)
+
+    def _performMove(self, move):
+        p = self.currentPlayer()
+        if p != None: self.currentPlayer().exitTurn()
+
+        self._board.move(move)
+
+        p = self.currentPlayer()
+        if p != None: self.currentPlayer().enterTurn(self._performMove)
+
     def playerOfColor(self, color):
         if color==None: return None
         return self._players[color.index]

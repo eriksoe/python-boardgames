@@ -1,21 +1,39 @@
 from board import Move
 
-# A game player.
-# This is currently a human player; this is to become a class hierarchy.
+# A game player (abstract base class).
 class Player:
     def __init__(self, color):
         self.color = color
-        self._from = None
+        self._moveAction = None
 
     def resetGame(self, board):
-        self._from = None
         self._board = board
+        self._moveAction = None
+        self.onResetGame()
+    def onResetGame(self): pass # Hook for subclasses
 
-    def enterTurn(self):
-        pass
-
+    def enterTurn(self, moveAction):
+        self._moveAction = moveAction
+        self.onEnterTurn()
     def exitTurn(self):
+        self._moveAction = None
+        self.onExitTurn()
+
+    def onEnterTurn(self): pass # Hook
+    def onExitTurn(self): pass # Hook
+
+    def onBoardClickedOnTurn(self, pos): pass # Hook
+    def drawHighlightsOnTurn(self, app, id, size, mouseOver): pass # Hook
+
+# A human game player controlling pieces through the UI.
+class HumanPlayer(Player):
+    def __init__(self, color):
+        Player.__init__(self, color)
         self._from = None
+
+    def onResetGame(self): self._from = None
+    def onEnterTurn(self): self._from = None
+    def onExitTurn(self): self._from = None
 
     # Return whether to redraw.
     def onBoardClickedOnTurn(self, pos):
@@ -28,7 +46,7 @@ class Player:
         else:
             theMove = Move(self._from, pos)
             if theMove in self._board.possibleMoves():
-                self._board.move(theMove)
+                self._moveAction(theMove)
                 self._from = None
                 return True
             else:

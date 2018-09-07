@@ -1,7 +1,7 @@
 from appJar.appjar import gui
 from board import Board, WHITE, BLACK
 from guiboard import GuiBoard
-from player import Player
+from player import Player, HumanPlayer
 
 app = None
 board = None
@@ -40,9 +40,7 @@ def createMainWindow(app, board, players):
 
 def newGameAction(btn):
     board.setup()
-    p1 = Player(WHITE)
-    p2 = Player(BLACK)
-    p1.resetGame(board)
-    p2.resetGame(board)
+    p1 = HumanPlayer(WHITE)
+    p2 = HumanPlayer(BLACK)
     guiBoard.setPlayers([p1, p2])
-    guiBoard.redraw()
+    guiBoard.resetGame()
