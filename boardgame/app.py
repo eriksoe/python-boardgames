@@ -1,7 +1,8 @@
+# -*- Encoding: utf-8 -*-
 from appJar.appjar import gui
 from board import Board, WHITE, BLACK
 from guiboard import GuiBoard
-from player import Player, HumanPlayer
+from player import Player, HumanPlayer, RandomPlayer
 
 app = None
 board = None
@@ -25,8 +26,16 @@ def createMainWindow(app, board, players):
     app.setSticky("NEW")
     app.setStretch("COLUMN")
 
-    app.addLabel("l1", "Menu")
-    app.addButton("New game", newGameAction)
+    app.addLabel("l1", "New Game")
+    app.addButton("2 player", new2PGameAction)
+    app.addButton("AI 'Random'", newRandomPlayerGameAction)
+
+    app.setPadding((0,5))
+    app.addLabel("l2a", "") # Spacer
+    #app.addHorizontalSeparator()
+    app.setPadding((0,0))
+    app.addLabel("l2", "Other Options")
+    app.addButton("Quit", quitAction)
     app.stopFrame()
 
     app.startLabelFrame("Board", row=0, column=1)
@@ -38,9 +47,17 @@ def createMainWindow(app, board, players):
 
     return guiboard
 
-def newGameAction(btn):
+def quitAction():
+    app.stop()
+
+def new2PGameAction(btn):
+    setupBoard(HumanPlayer, HumanPlayer)
+def newRandomPlayerGameAction(btn):
+    setupBoard(HumanPlayer, RandomPlayer)
+
+def setupBoard(p1Class, p2Class):
     board.setup()
-    p1 = HumanPlayer(WHITE)
-    p2 = HumanPlayer(BLACK)
+    p1 = p1Class(WHITE)
+    p2 = p2Class(BLACK)
     guiBoard.setPlayers([p1, p2])
     guiBoard.resetGame()

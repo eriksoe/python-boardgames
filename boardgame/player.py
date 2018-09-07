@@ -1,4 +1,5 @@
 from board import Move
+import random
 
 # A game player (abstract base class).
 class Player:
@@ -24,6 +25,15 @@ class Player:
 
     def onBoardClickedOnTurn(self, pos): pass # Hook
     def drawHighlightsOnTurn(self, app, id, size, mouseOver): pass # Hook
+
+class RandomPlayer(Player):
+    def __init__(self, color):
+        Player.__init__(self, color)
+
+    def onEnterTurn(self):
+        move = random.choice(self._board.possibleMoves())
+        self._moveAction(move)
+
 
 # A human game player controlling pieces through the UI.
 class HumanPlayer(Player):
