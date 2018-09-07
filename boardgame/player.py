@@ -36,21 +36,28 @@ class RandomPlayer(Player):
         move = random.choice(self._board.possibleMoves())
         self._moveAction(move)
 
-class SlowRandomPlayer(Player):
+class ThreadedPlayer(Player):
     def __init__(self, color):
         Player.__init__(self, color)
 
     def onEnterTurn(self):
-        self._app.threadCallback(self._doProcessing, self._afterProcessing)
+        self._app.threadCallback(self.selectMove, self._afterMoveSelected)
 
-    def _doProcessing(self):
+    def _afterMoveSelected(self, move):
+        self._moveAction(move)
+
+    def selectMove(self):
+        raise Exception("Abstract method not implemented")
+
+
+class SlowRandomPlayer(ThreadedPlayer):
+    def __init__(self, color):
+        ThreadedPlayer.__init__(self, color)
+
+    def selectMove(self):
         time.sleep(1)
         move = random.choice(self._board.possibleMoves())
         return move
-
-    def _afterProcessing(self, move):
-        self._moveAction(move)
-
 
 # A human game player controlling pieces through the UI.
 class HumanPlayer(Player):
