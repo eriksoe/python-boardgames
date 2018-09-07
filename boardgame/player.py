@@ -1,5 +1,6 @@
 from board import Move
 import random
+import time
 
 # A game player (abstract base class).
 class Player:
@@ -7,8 +8,9 @@ class Player:
         self.color = color
         self._moveAction = None
 
-    def resetGame(self, board):
+    def resetGame(self, board, app):
         self._board = board
+        self._app = app
         self._moveAction = None
         self.onResetGame()
     def onResetGame(self): pass # Hook for subclasses
@@ -32,6 +34,21 @@ class RandomPlayer(Player):
 
     def onEnterTurn(self):
         move = random.choice(self._board.possibleMoves())
+        self._moveAction(move)
+
+class SlowRandomPlayer(Player):
+    def __init__(self, color):
+        Player.__init__(self, color)
+
+    def onEnterTurn(self):
+        self._app.threadCallback(self._doProcessing, self._afterProcessing)
+
+    def _doProcessing(self):
+        time.sleep(1)
+        move = random.choice(self._board.possibleMoves())
+        return move
+
+    def _afterProcessing(self, move):
         self._moveAction(move)
 
 

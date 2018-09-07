@@ -48,7 +48,7 @@ class GuiBoard:
 
     def resetGame(self):
         for p in self._players:
-            p.resetGame(self._board)
+            p.resetGame(self._board, self._app)
         self.redraw()
 
         p = self.currentPlayer()
@@ -59,6 +59,7 @@ class GuiBoard:
         if p != None: self.currentPlayer().exitTurn()
 
         self._board.move(move)
+        self.redraw()
 
         p = self.currentPlayer()
         if p != None: self.currentPlayer().enterTurn(self._performMove)

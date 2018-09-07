@@ -2,7 +2,7 @@
 from appJar.appjar import gui
 from board import Board, WHITE, BLACK
 from guiboard import GuiBoard
-from player import Player, HumanPlayer, RandomPlayer
+from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
 
 app = None
 board = None
@@ -29,6 +29,7 @@ def createMainWindow(app, board, players):
     app.addLabel("l1", "New Game")
     app.addButton("2 player", new2PGameAction)
     app.addButton("AI 'Random'", newRandomPlayerGameAction)
+    app.addButton("AI 'SlowRandom'", newSlowRandomPlayerGameAction)
 
     app.setPadding((0,5))
     app.addLabel("l2a", "") # Spacer
@@ -54,6 +55,8 @@ def new2PGameAction(btn):
     setupBoard(HumanPlayer, HumanPlayer)
 def newRandomPlayerGameAction(btn):
     setupBoard(HumanPlayer, RandomPlayer)
+def newSlowRandomPlayerGameAction(btn):
+    setupBoard(HumanPlayer, SlowRandomPlayer)
 
 def setupBoard(p1Class, p2Class):
     board.setup()
