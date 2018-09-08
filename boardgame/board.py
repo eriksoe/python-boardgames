@@ -26,10 +26,20 @@ WHITE = Color("white", 0, 1)
 BLACK = Color("black", 1, -1)
 
 class Board:
-    def __init__(self):
-        self.board = [[None for x in xrange(8)] for y in xrange(8)]
-        self.nextPlayer = None
-        self.winner = None
+    def __init__(self, cloneOf=None):
+        if cloneOf==None:
+            self.board = [[None for x in xrange(8)] for y in xrange(8)]
+            self.nextPlayer = None
+            self.winner = None
+        else:
+            self.board = [[cloneOf.get(x,y) for x in xrange(8)] for y in xrange(8)]
+            self.nextPlayer = cloneOf.nextPlayer
+            self.winner = cloneOf.winner
+            self.turnNr = cloneOf.turnNr
+            self._moves = cloneOf._moves
+
+    def clone(self):
+        return Board(cloneOf=self)
 
     def get(self, x, y):
         return self.board[y][x]
@@ -42,11 +52,23 @@ class Board:
         self.turnNr += 1
         self._moves = None
         won = (y2==7) if self.nextPlayer == WHITE else (y2==0)
+        curPlayer = self.nextPlayer
         if won:
             self.winner = self.nextPlayer
             self.nextPlayer = None
         else:
+            # Turn change:
             self.nextPlayer = WHITE if self.nextPlayer == BLACK else BLACK
+
+            # Check for no-moves game termination:
+            if len(self.possibleMoves()) == 0:
+                # Are both sides blocked?
+                self.nextPlayer = curPlayer
+                if len(self._generateMoves()) == 0:
+                    self.winner = None # Draw
+                else:
+                    self.winner = curPlayer # Won because other player has no moves
+                self.nextPlayer = None
 
     def setup(self):
         self.board = [[None for x in xrange(8)] for y in xrange(8)]
@@ -102,3 +124,6 @@ class Move:
 
     def __eq__(self, other):
         return self.src == other.src and self.dst == other.dst
+
+    def __str__(self):
+        return "Move(%s -> %s)" % (self.src, self.dst)
