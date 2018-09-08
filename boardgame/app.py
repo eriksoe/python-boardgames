@@ -3,6 +3,7 @@ from appJar.appjar import gui
 from board import Board, WHITE, BLACK
 from guiboard import GuiBoard
 from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
+from flatmc_player import FlatMCPlayer
 
 app = None
 board = None
@@ -30,6 +31,7 @@ def createMainWindow(app, board, players):
     app.addButton("2 player", new2PGameAction)
     app.addButton("AI 'Random'", newRandomPlayerGameAction)
     app.addButton("AI 'SlowRandom'", newSlowRandomPlayerGameAction)
+    app.addButton("AI 'FlatMC'", newFlatMCPlayerGameAction)
 
     app.setPadding((0,5))
     app.addLabel("l2a", "") # Spacer
@@ -57,6 +59,8 @@ def newRandomPlayerGameAction(btn):
     setupBoard(HumanPlayer, RandomPlayer)
 def newSlowRandomPlayerGameAction(btn):
     setupBoard(HumanPlayer, SlowRandomPlayer)
+def newFlatMCPlayerGameAction(btn):
+    setupBoard(HumanPlayer, FlatMCPlayer)
 
 def setupBoard(p1Class, p2Class):
     board.setup()

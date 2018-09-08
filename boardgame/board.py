@@ -127,3 +127,5 @@ class Move:
 
     def __str__(self):
         return "Move(%s -> %s)" % (self.src, self.dst)
+    def __repr__(self):
+        return "Move(%s -> %s)" % (self.src, self.dst)
