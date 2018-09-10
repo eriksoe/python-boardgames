@@ -41,7 +41,11 @@ class ThreadedPlayer(Player):
         Player.__init__(self, color)
 
     def onEnterTurn(self):
-        self._app.threadCallback(self.selectMove, self._afterMoveSelected)
+        self._app.threadCallback(self._aroundSelectMove, self._afterMoveSelected)
+
+    def _aroundSelectMove(self):
+        time.sleep(1) # To prevent initial GUI freeze. Don't know why necessary.
+        return self.selectMove()
 
     def _afterMoveSelected(self, move):
         self._moveAction(move)

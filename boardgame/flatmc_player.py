@@ -25,7 +25,6 @@ class FlatMCPlayer(ThreadedPlayer):
         self._n = 0
         self._approxLog = 100
 
-        time.sleep(1) # Yield.
         while time.time() < deadline:
             for i in xrange(FlatMCPlayer.BATCH_SIZE):
                 self.improveEvaluation()
