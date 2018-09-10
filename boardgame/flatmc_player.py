@@ -5,8 +5,6 @@ import random
 import heapq
 import math
 
-UNEXPLORED_SCORE = -1e9
-
 class FlatMCPlayer(ThreadedPlayer):
     TIME_PER_MOVE = 2.5
     BATCH_SIZE = 10
@@ -18,7 +16,7 @@ class FlatMCPlayer(ThreadedPlayer):
         t0 = time.time()
         deadline = t0 + FlatMCPlayer.TIME_PER_MOVE
         possibleMoves = self._board.possibleMoves()
-        heap = [(UNEXPLORED_SCORE, m, 0, 0) for m in possibleMoves]
+        heap = [MoveEntry(m) for m in possibleMoves]
         heapq.heapify(heap) # Essentially a no-op when all priorities are identical.
         print("DB| FlatMC: number of moves: %d" % len(heap))
         self._heap = heap
@@ -38,7 +36,7 @@ class FlatMCPlayer(ThreadedPlayer):
 
     def improveEvaluation(self):
         topItem = self._heap[0]
-        (oldScore, topMove, plays, wins) = topItem
+        topMove = topItem.move
         b = Board(cloneOf = self._board)
         # print("Investigating %s" % (topMove,))
         b.move(topMove)
@@ -49,13 +47,11 @@ class FlatMCPlayer(ThreadedPlayer):
 
         # Update variables:
         delta = 1 if b.winner == self.color else 0.5 if b.winner == None else 0
-        plays += 1
-        wins += delta
         self._n += 1
+        topItem.addPlayResult(delta, self._approxLog)
 
-        topItem = self.scoredTuple(topMove, plays, wins)
         heapq.heapreplace(self._heap, topItem)
-        # print("Investigated %s: %.3f -> %.3f" % (topMove, oldScore, topItem[0]))
+
         # Update derived values:
         # (OBS - must be done after item replacement, as long as we use heapreplace())
         if self.timeToUpdateLog():
@@ -66,27 +62,59 @@ class FlatMCPlayer(ThreadedPlayer):
         return True # TODO: optimize - look at self._n
     def updateLog(self):
         self._approxLog = math.log(self._n)
-        newHeap = [self.scoredTuple(move, plays, wins)
-                   for (oldScore, move, plays, wins) in self._heap]
-        heapq.heapify(newHeap)
-        self._heap = newHeap
-
-    def scoredTuple(self, move, plays, wins):
-        # Because of heap order, better score must be more negative
-        if plays==0:
-            score = UNEXPLORED_SCORE
-        else:
-            score = -(float(wins)/plays + math.sqrt(2*self._approxLog / plays))
-        return (score, move, plays, wins)
+        for item in self._heap:
+            item.updateScore(self._approxLog)
+        heapq.heapify(self._heap)
 
     def selectBestMoveFromHeap(self):
         print("DB| selectBestMoveFromHeap: heap-top=%s" % (self._heap[0],))
-        #(score, move, _, _) = self._heap[0]
-        (_, bestMove, mostPlays, _) = self._heap[0]
+        topItem = self._heap[0]
+        bestMove = topItem.move
+        mostPlays = topItem.getPlays()
         for item in self._heap:
-            (_, move, plays, _) = item
+            plays = item.getPlays()
             if plays > mostPlays:
-                bestMove = move
+                bestMove = item.move
                 mostPlays = plays
         print("DB| selectBestMoveFromHeap: bestMove=%s (%d)" % (bestMove, mostPlays))
         return bestMove
+
+class MoveEntry:
+    UNEXPLORED_SCORE = 1e9
+
+    def __init__(self, move):
+        self._score = MoveEntry.UNEXPLORED_SCORE
+        self.move = move
+        self._plays = 0
+        self._wins = 0
+
+    def getPlays(self): return self._plays
+
+    def __lt__(self, other):
+        return self._score > other._score # Reverse score comparison (to fit with heap order)
+    
+    def addPlayResult(self, delta, approxLog):
+        self._plays += 1
+        self._wins += delta
+        self.updateScore(approxLog)
+    
+    def updateScore(self, approxLog):
+        plays = self._plays
+        wins = self._wins
+        if plays==0:
+            score = MoveEntry.UNEXPLORED_SCORE
+        else:
+            score = float(wins)/plays + math.sqrt(2*approxLog / plays)
+        self._score = score
+
+
+    def __repr__(self):
+        return self.__str__()
+    def __str__(self):
+        plays = self._plays
+        wins = self._wins
+        return "MoveE(%s, %s/%s=%.3f, UCB=%.3f)" % (self.move,
+                                                  wins,
+                                                  plays,
+                                                  0.5 if plays==0 else float(wins)/plays,
+                                                  self._score)
