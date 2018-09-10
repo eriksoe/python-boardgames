@@ -4,6 +4,7 @@ from board import Board, WHITE, BLACK
 from guiboard import GuiBoard
 from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
 from flatmc_player import FlatMCPlayer
+from mcts_player import MCTSPlayer
 
 app = None
 board = None
@@ -32,6 +33,7 @@ def createMainWindow(app, board, players):
     app.addButton("AI 'Random'", newRandomPlayerGameAction)
     app.addButton("AI 'SlowRandom'", newSlowRandomPlayerGameAction)
     app.addButton("AI 'FlatMC'", newFlatMCPlayerGameAction)
+    app.addButton("AI 'MCTS'", newMCTSPlayerGameAction)
 
     app.setPadding((0,5))
     app.addLabel("l2a", "") # Spacer
@@ -61,6 +63,8 @@ def newSlowRandomPlayerGameAction(btn):
     setupBoard(HumanPlayer, SlowRandomPlayer)
 def newFlatMCPlayerGameAction(btn):
     setupBoard(HumanPlayer, FlatMCPlayer)
+def newMCTSPlayerGameAction(btn):
+    setupBoard(HumanPlayer, MCTSPlayer)
 
 def setupBoard(p1Class, p2Class):
     board.setup()

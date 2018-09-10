@@ -1,15 +1,18 @@
 class Color:
-    def __init__(self, name, index, dy):
+    def __init__(self, name, index, weight):
         self.name = name
         self.index = index
-        self._dy = dy
-        self._homeRow = int((7 - 5*dy)/2)
+        self._weight = weight
+        self._homeRow = int((7 - 5*weight)/2)
 
     def pawn_img(self):
         return "gfx/%s-pawn.png" % (self.name,)
 
     def forwardY(self):
-        return self._dy
+        return self._weight
+
+    def weight(self):
+        return self._weight
 
     def homeRow(self):
         return self._homeRow
