@@ -120,6 +120,9 @@ class Board:
                         moves.append(Move((x,y), (x1,y1)))
         return moves
 
+RANK_NAMES = [chr(ord('1') + x) for x in xrange(8)]
+LINE_NAMES = [chr(ord('a') + x) for x in xrange(8)]
+
 class Move:
     def __init__(self, src, dst):
         self.src = src
@@ -129,6 +132,14 @@ class Move:
         return self.src == other.src and self.dst == other.dst
 
     def __str__(self):
-        return "Move(%s -> %s)" % (self.src, self.dst)
+        return self.__repr__()
     def __repr__(self):
-        return "Move(%s -> %s)" % (self.src, self.dst)
+        (sx,sy) = self.src
+        (dx,dy) = self.dst
+        if sx!=dx:
+            return LINE_NAMES[sx] + "x" + LINE_NAMES[dx] + RANK_NAMES[dy]
+        elif abs(sy-dy)==1:
+            return LINE_NAMES[dx] + RANK_NAMES[dy]
+        else:
+            return LINE_NAMES[dx] + RANK_NAMES[sy] + "-" + RANK_NAMES[dy]
+        #return "Move(%s -> %s)" % (self.src, self.dst)

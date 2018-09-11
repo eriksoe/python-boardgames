@@ -35,10 +35,12 @@ class MCTSPlayer(ThreadedPlayer):
         # Descend the tree:
         node = root
         b = Board(cloneOf = self._board)
+        #line = ""
         while True:
             entry = node.selectPromisingMove()
             childNode = entry.getTreeNode()
             b.move(entry.move)
+            #line += "%s " % (entry.move,)
             if b.nextPlayer==None: # Leaf node
                 break
             if childNode == None:
@@ -46,6 +48,7 @@ class MCTSPlayer(ThreadedPlayer):
                 node = entry.createTreeNode(b, node)
                 break
             node = childNode
+        #print "Expanding line: %s" % (line,)
 
         # Playout/determine value:
         if b.nextPlayer==None:
