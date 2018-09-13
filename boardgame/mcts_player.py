@@ -5,42 +5,69 @@ import random
 import heapq
 import math
 
+class PolicyContext:
+    def __init__(self):
+        self.exploration = 2
+
 class MCTSPlayer(ThreadedPlayer):
     TIME_PER_MOVE = 2.5
+    LOW_EXPLORATION_TIME = 1.0
     BATCH_SIZE = 10
 
-    def __init__(self, color):
+    def __init__(self, color, time=TIME_PER_MOVE):
         ThreadedPlayer.__init__(self, color)
+        self.time_per_move = time
         # TODO: Retain state (relevant part of the tree) between moves.
 
     def selectMove(self):
         t0 = time.time()
-        deadline = t0 + MCTSPlayer.TIME_PER_MOVE
+        deadline = t0 + self.time_per_move
 
         root = TreeNode(self._board, None)
+        ctx = PolicyContext()
 
         while time.time() < deadline:
+            # if time.time() > deadline - MCTSPlayer.LOW_EXPLORATION_TIME:
+            #     ctx.exploration = 0.1
+            print("DB| Round with exploration=%f" % (ctx.exploration,))
             for i in xrange(MCTSPlayer.BATCH_SIZE):
-                self.improveEvaluation(root)
+                self.improveEvaluation(root, ctx)
+            if root.canStopEarly():
+                print "STOPPING EARLY"
+                break
             time.sleep(0) # Yield.
             #break # TEST
         #print("Time's up - evaluations: %d" % self._n)
         #print("Heap at end: %s" % (sorted(self._heap)))
 
-        move = root.selectBestFinalMove()
+        print "State along best line:"
+        n = root
+        while n != None:
+            entry = n.selectBestFinalEntry()
+            print "== Chosen: %s ==" % (entry.move)
+            childNode = entry.getTreeNode()
+            if childNode==None: break
+            print "Heap: %s" %  (sorted(childNode._heap))
+            n = childNode
+        print "===="
+        
+        move = root.selectBestFinalEntry().move
         print("Heap at end: %s" % (sorted(root._heap)))
+
+        spent = time.time() - t0
+        print "SPENT: %.3fs on %s" % (spent,move)
         return move
 
-    def improveEvaluation(self, root):
+    def improveEvaluation(self, root, ctx):
         # Descend the tree:
         node = root
         b = Board(cloneOf = self._board)
-        #line = ""
+        line = ""
         while True:
             entry = node.selectPromisingMove()
             childNode = entry.getTreeNode()
             b.move(entry.move)
-            #line += "%s " % (entry.move,)
+            line += "%s(%d) " % (entry.move, entry._plays)
             if b.nextPlayer==None: # Leaf node
                 break
             if childNode == None:
@@ -48,7 +75,7 @@ class MCTSPlayer(ThreadedPlayer):
                 node = entry.createTreeNode(b, node)
                 break
             node = childNode
-        #print "Expanding line: %s" % (line,)
+        print "Expanding line: %s" % (line,)
 
         # Playout/determine value:
         if b.nextPlayer==None:
@@ -62,7 +89,7 @@ class MCTSPlayer(ThreadedPlayer):
 
         # Propagate change:
         while node!=None:
-            node.addPlayoutResult(playoutValue)
+            node.addPlayoutResult(playoutValue, ctx)
             node = node.parent
 
     def playout(self, board):
@@ -72,17 +99,6 @@ class MCTSPlayer(ThreadedPlayer):
         # print("=> Winner: %s" % (b.winner,))
         return board.winner
             
-    def improveEvaluation_OLD(self):
-        topItem = self._heap[0]
-        topMove = topItem.move
-        b = Board(cloneOf = self._board)
-        # print("Investigating %s" % (topMove,))
-        b.move(topMove)
-        while b.nextPlayer != None:
-            moves = b.possibleMoves()
-            b.move(random.choice(moves))
-        # print("=> Winner: %s" % (b.winner,))
-
 class TreeNode:
     def __init__(self, board, parent):
         self.parent = parent
@@ -98,43 +114,52 @@ class TreeNode:
 
     def timeToUpdateLog(self):
         return True # TODO: optimize - look at self._n
-    def updateLog(self):
+    def updateLog(self, ctx):
         self._approxLog = math.log(self._n)
         for item in self._heap:
-            item.updateScore(self._approxLog, self.color.weight())
+            item.updateScore(self._approxLog, self.color.weight(), ctx)
         heapq.heapify(self._heap)
 
-    def addPlayoutResult(self, value):
+    def canStopEarly(self):
+        if len(self._heap)<2: return True # Forced move
+        # top = self._heap[0]
+        # ru1 = self._heap[1]
+        # ru2 = self._heap[2]
+        # if top._plays>10 and top._plays > 2*ru1._plays and top._plays > 2*ru2._plays:
+        #     return True # TEST CRITERION
+        return False
+
+    def addPlayoutResult(self, value, ctx):
         # Update variables:
         self._n += 1
         topItem = self._heap[0]
-        topItem.addPlayResult(value, self._approxLog, self.color.weight())
+        topItem.addPlayResult(value, self._approxLog, self.color.weight(), ctx)
         heapq.heapreplace(self._heap, topItem)
 
         # Update derived values:
         # (OBS - must be done after item replacement, as long as we use heapreplace())
         if self.timeToUpdateLog():
-            self.updateLog()
+            self.updateLog(ctx)
 
         # Returns (move, childNode)
     def selectPromisingMove(self):
         topItem = self._heap[0]
         return topItem
 
-    def selectBestFinalMove(self):
-        topItem = self._heap[0]
-        bestMove = topItem.move
-        bestItem = topItem
-        mostPlays = topItem.getPlays()
-        for item in self._heap:
-            plays = item.getPlays()
+    def selectBestFinalEntry(self):
+        topEntry = self._heap[0]
+        bestMove = topEntry.move
+        bestEntry = topEntry
+        mostPlays = topEntry.getPlays()
+        for entry in self._heap:
+            plays = entry.getPlays()
             if plays > mostPlays:
-                bestMove = item.move
-                bestItem = item
+                bestMove = entry.move
+                bestEntry = entry
                 mostPlays = plays
         print("DB| selectBestMoveFromHeap: bestMove=%s (%d)" % (bestMove, mostPlays))
-        print("DB| selectBestMoveFromHeap: bestItem=%s" % (bestItem,))
-        return bestMove
+        print("DB| selectBestMoveFromHeap: bestEntry=%s" % (bestEntry,))
+        return bestEntry
 
         
     
@@ -154,18 +179,19 @@ class MoveEntry:
         #print "MoveEntry.lt: %s vs %s" % (self._score, other._score)
         return self._score < other._score # Reverse score comparison (to fit with heap order)
     
-    def addPlayResult(self, delta, approxLog, sign):
+    def addPlayResult(self, delta, approxLog, sign, ctx):
         self._plays += 1
         self._wins += delta
-        self.updateScore(approxLog, sign)
+        self.updateScore(approxLog, sign, ctx)
     
-    def updateScore(self, approxLog, sign):
+    def updateScore(self, approxLog, sign, ctx):
         plays = self._plays
         wins = self._wins
         if plays==0:
             score = MoveEntry.UNEXPLORED_SCORE
         else:
-            score = -(sign*float(wins)/plays + math.sqrt(2*approxLog / plays))
+            exploration = ctx.exploration
+            score = -(sign*float(wins)/plays + math.sqrt(exploration*approxLog / plays))
         self._score = score
 
     def getTreeNode(self):

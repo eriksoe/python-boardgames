@@ -34,6 +34,7 @@ def createMainWindow(app, board, players):
     app.addButton("AI 'SlowRandom'", newSlowRandomPlayerGameAction)
     app.addButton("AI 'FlatMC'", newFlatMCPlayerGameAction)
     app.addButton("AI 'MCTS'", newMCTSPlayerGameAction)
+    app.addButton("AI vs AI 'MCTS'", newMCTSPlayer2GameAction)
 
     app.setPadding((0,5))
     app.addLabel("l2a", "") # Spacer
@@ -64,11 +65,13 @@ def newSlowRandomPlayerGameAction(btn):
 def newFlatMCPlayerGameAction(btn):
     setupBoard(HumanPlayer, FlatMCPlayer)
 def newMCTSPlayerGameAction(btn):
-    setupBoard(HumanPlayer, MCTSPlayer)
+    setupBoard(HumanPlayer, MCTSPlayer, args2={"time":2.0})
+def newMCTSPlayer2GameAction(btn):
+    setupBoard(MCTSPlayer, MCTSPlayer, args1={"time":2.0}, args2={"time":1.0})
 
-def setupBoard(p1Class, p2Class):
+def setupBoard(p1Class, p2Class, args1={}, args2={}):
     board.setup()
-    p1 = p1Class(WHITE)
-    p2 = p2Class(BLACK)
+    p1 = p1Class(WHITE, **args1)
+    p2 = p2Class(BLACK, **args2)
     guiBoard.setPlayers([p1, p2])
     guiBoard.resetGame()
