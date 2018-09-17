@@ -131,6 +131,9 @@ class Move:
     def __eq__(self, other):
         return self.src == other.src and self.dst == other.dst
 
+    def __hash__(self):
+        return self.src.__hash__() + 101*self.dst.__hash__()
+
     def __str__(self):
         return self.__repr__()
     def __repr__(self):

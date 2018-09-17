@@ -5,9 +5,34 @@ import random
 import heapq
 import math
 
-class PolicyContext:
+class Context:
     def __init__(self):
+        # Policy:
         self.exploration = 2
+        self.rave_threshold = 10
+        # Move-local state:
+        self.statsForMove = dict() # dict: move=>(enum,denom)
+
+    def updateStatsForMove(self, move, value, weight):
+        # TODO: Ought to include color as index & parameter.
+        if weight==0:
+            return
+        oldFraction = self.statsForMove.get(move, None)
+        if oldFraction==None:
+            (a,b) = (0,0)
+        else:
+            (a,b) = oldFraction
+        a += float(value)*weight
+        b += weight
+        self.statsForMove[move] = (a,b)
+        
+    def heuristicValueForMove(self, move):
+        fraction = self.statsForMove.get(move, None)
+        if fraction==None:
+            return 0.95 # A move to be investigated
+        else:
+            (a,b) = fraction
+            return a/b
 
 class MCTSPlayer(ThreadedPlayer):
     TIME_PER_MOVE = 2.5
@@ -23,8 +48,8 @@ class MCTSPlayer(ThreadedPlayer):
         t0 = time.time()
         deadline = t0 + self.time_per_move
 
-        root = TreeNode(self._board, None)
-        ctx = PolicyContext()
+        ctx = Context()
+        root = TreeNode(self._board, None, ctx)
 
         while time.time() < deadline:
             # if time.time() > deadline - MCTSPlayer.LOW_EXPLORATION_TIME:
@@ -72,20 +97,29 @@ class MCTSPlayer(ThreadedPlayer):
                 break
             if childNode == None:
                 #print "DB| Creating node at turn %d with color %s" % (b.turnNr, b.nextPlayer.name)
-                node = entry.createTreeNode(b, node)
+                node = entry.createTreeNode(b, node, ctx)
                 break
             node = childNode
         print "Expanding line: %s" % (line,)
 
         # Playout/determine value:
+        playoutMoves = None
         if b.nextPlayer==None:
             playoutWinner = b.winner
         else:
-            playoutWinner = self.playout(b)
+#            (playoutWinner, playoutMoves) = self.playout(b)
+            (playoutWinner, playoutMoves) = self.playoutUsingHeuristics(b, ctx)
         if playoutWinner==None:
             playoutValue = 0.5
         else:
             playoutValue = (playoutWinner.weight() + 1) / 2 # (-1..1) -> (0..1)
+
+        # Update global move stats:
+        if playoutMoves != None:
+            updateWeight = 1
+            for m in playoutMoves:
+                ctx.updateStatsForMove(m, playoutValue, updateWeight)
+                updateWeight *= 0.99 # Decay reward.
 
         # Propagate change:
         while node!=None:
@@ -93,19 +127,42 @@ class MCTSPlayer(ThreadedPlayer):
             node = node.parent
 
     def playout(self, board):
+        moveSeq = []
         while board.nextPlayer != None:
-            moves = board.possibleMoves()
-            board.move(random.choice(moves))
+            possibleMoves = board.possibleMoves()
+            move = random.choice(possibleMoves)
+            board.move(move)
+            moveSeq.append(move)
         # print("=> Winner: %s" % (b.winner,))
-        return board.winner
-            
+        return (board.winner, moveSeq)
+
+    def playoutUsingHeuristics(self, board, ctx):
+        N = 3 # How many moves to look at
+        moveSeq = []
+        while board.nextPlayer != None:
+            possibleMoves = board.possibleMoves()
+            move = random.choice(possibleMoves)
+            bestHV = ctx.heuristicValueForMove(move)
+            sign = board.nextPlayer.weight()
+            for i in xrange(N-1):
+                altMove = random.choice(possibleMoves)
+                altHV = ctx.heuristicValueForMove(altMove)
+                if sign*(altHV - bestHV) > 0:
+                    #print("DB| playout: changing %s to %s (%.3f vs %.3f)" % (move, altMove, bestHV, altHV))
+                    move = altMove
+                    bestHV = altHV
+            board.move(move)
+            moveSeq.append(move)
+        # print("=> Winner: %s" % (b.winner,))
+        return (board.winner, moveSeq)
+
 class TreeNode:
-    def __init__(self, board, parent):
+    def __init__(self, board, parent, ctx):
         self.parent = parent
         self.color = board.nextPlayer
         
         possibleMoves = board.possibleMoves()
-        heap = [MoveEntry(m) for m in possibleMoves]
+        heap = [MoveEntry(m, ctx) for m in possibleMoves]
         heapq.heapify(heap) # Essentially a no-op when all priorities are identical.
         #print("DB| MCTS.TreeNode: number of moves: %d" % len(heap))
         self._heap = heap
@@ -164,20 +221,22 @@ class TreeNode:
         
     
 class MoveEntry:
-    UNEXPLORED_SCORE = -1e9
+    UNEXPLORED_SCORE = 1e6
 
-    def __init__(self, move):
+    def __init__(self, move, ctx):
         self._score = MoveEntry.UNEXPLORED_SCORE
         self.move = move
         self._plays = 0
         self._wins = 0
         self._treeNode = None
+        
+        self._heuristicValue = ctx.heuristicValueForMove(move)
 
     def getPlays(self): return self._plays
 
     def __lt__(self, other):
         #print "MoveEntry.lt: %s vs %s" % (self._score, other._score)
-        return self._score < other._score # Reverse score comparison (to fit with heap order)
+        return self._score > other._score # Reverse score comparison (to fit with heap order)
     
     def addPlayResult(self, delta, approxLog, sign, ctx):
         self._plays += 1
@@ -188,17 +247,25 @@ class MoveEntry:
         plays = self._plays
         wins = self._wins
         if plays==0:
-            score = MoveEntry.UNEXPLORED_SCORE
+            score = 0
+            spread = MoveEntry.UNEXPLORED_SCORE
         else:
             exploration = ctx.exploration
-            score = -(sign*float(wins)/plays + math.sqrt(exploration*approxLog / plays))
+            spread = math.sqrt(exploration*approxLog / plays)
+            score = float(wins)/plays
+            
+        if plays < ctx.rave_threshold:
+            alpha = plays / float(ctx.rave_threshold)
+            score = alpha*score + (1-alpha)*self._heuristicValue
+        score = sign*score + spread
+                
         self._score = score
 
     def getTreeNode(self):
         return self._treeNode
     
-    def createTreeNode(self, board, parent):
-        self._treeNode = TreeNode(board, parent)
+    def createTreeNode(self, board, parent, ctx):
+        self._treeNode = TreeNode(board, parent, ctx)
         return self._treeNode
 
 
@@ -207,8 +274,10 @@ class MoveEntry:
     def __str__(self):
         plays = self._plays
         wins = self._wins
-        return "MoveE(%s, %s/%s=%.3f, UCB=%.3f)" % (self.move,
-                                                  wins,
-                                                  plays,
-                                                  0.5 if plays==0 else float(wins)/plays,
-                                                  self._score)
+        return "MoveE(%s, %s/%s=%.3f, heu=%.3f, score=%.3f)" % (
+            self.move,
+            wins,
+            plays,
+            0.5 if plays==0 else float(wins)/plays,
+            self._heuristicValue,
+            self._score)
