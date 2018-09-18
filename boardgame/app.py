@@ -1,6 +1,6 @@
 # -*- Encoding: utf-8 -*-
 from appJar.appjar import gui
-from board import Board
+from board import ChessBoard
 from playercolor import WHITE, BLACK
 from guiboard import GuiBoard
 from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
@@ -17,7 +17,7 @@ def startApp():
     global guiBoard
 
     app = gui("ChromoDynamics", "600x450")
-    board = Board()
+    board = ChessBoard()
 
     guiBoard = createMainWindow(app, board, [None, None])
     guiBoard.redraw()

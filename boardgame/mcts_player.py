@@ -1,5 +1,4 @@
 from player import ThreadedPlayer
-from board import Board
 import time
 import random
 import heapq
@@ -86,7 +85,7 @@ class MCTSPlayer(ThreadedPlayer):
     def improveEvaluation(self, root, ctx):
         # Descend the tree:
         node = root
-        b = Board(cloneOf = self._board)
+        b = self._board.clone()
         line = ""
         while True:
             entry = node.selectPromisingMove()

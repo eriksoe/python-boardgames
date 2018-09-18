@@ -1,5 +1,4 @@
 from player import ThreadedPlayer
-from board import Board
 import time
 import random
 import heapq
@@ -37,7 +36,7 @@ class FlatMCPlayer(ThreadedPlayer):
     def improveEvaluation(self):
         topItem = self._heap[0]
         topMove = topItem.move
-        b = Board(cloneOf = self._board)
+        b = self._board.clone()
         # print("Investigating %s" % (topMove,))
         b.move(topMove)
         while b.nextPlayer != None:

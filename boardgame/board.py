@@ -1,6 +1,6 @@
 from playercolor import Color, WHITE, BLACK
 
-class Board:
+class ChessBoard:
     def __init__(self, cloneOf=None):
         if cloneOf==None:
             self.board = [[None for x in xrange(8)] for y in xrange(8)]
@@ -14,7 +14,7 @@ class Board:
             self._moves = cloneOf._moves
 
     def clone(self):
-        return Board(cloneOf=self)
+        return ChessBoard(cloneOf=self)
 
     def get(self, x, y):
         return self.board[y][x]
