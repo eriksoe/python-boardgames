@@ -1,6 +1,7 @@
 # -*- Encoding: utf-8 -*-
 from appJar.appjar import gui
-from board import Board, WHITE, BLACK
+from board import Board
+from playercolor import WHITE, BLACK
 from guiboard import GuiBoard
 from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
 from flatmc_player import FlatMCPlayer

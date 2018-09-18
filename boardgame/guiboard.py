@@ -1,4 +1,5 @@
-from board import Move, Color, WHITE, BLACK
+from playercolor import Color, WHITE, BLACK
+from board import Move
 
 class Icons:
     dark_square_img = "gfx/dark-square.png"
