@@ -1,0 +1,11 @@
+
+# Generated files:
+*.pyc
+
+# Backup files:
+*~
+*.bak
+.#*
+
+# Hidden files:
+.*
