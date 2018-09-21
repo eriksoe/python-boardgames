@@ -12,11 +12,28 @@ class Icons:
     white_won_icon = "gfx/white-circle-glow2.png"
     black_won_icon = "gfx/black-circle-glow2.png"
 
-class GuiBoard:
-    SQR_SIZE = 48
-
-    def __init__(self, app, board, players):
+# Abstract class.
+class GameGui:
+    def __init__(self, app, canvasID, board):
         self._app = app
+        self._canvas = canvasID
+        self._board = board
+
+    def drawBoard(self):
+        raise Exception("Not implemented")        
+        
+    def onEnterTurn(self, moveAction):
+        raise Exception("Not implemented")        
+    def onBoardClicked(self, color, event):
+        raise Exception("Not implemented")
+
+    
+class GuiBoard:
+    SQR_SIZE = 48 #TODO: Replace with total size
+
+    def __init__(self, app, gameGui, board, players):
+        self._app = app
+        self._gameGui = gameGui
         self._board = board
         self._players = players
 
@@ -27,9 +44,9 @@ class GuiBoard:
         app.setCanvasRelief("c", "sunken")
 
         c.bind("<Button-1>", self.onBoardClicked)
-        c.bind("<Double-Button-1>", self.onBoardDoubleClicked)
-        c.bind("<B1-Motion>", self.onBoardDrag)
-        c.bind("<ButtonRelease-1>", self.onBoardReleased)
+#        c.bind("<Double-Button-1>", self.onBoardDoubleClicked)
+#        c.bind("<B1-Motion>", self.onBoardDrag)
+#        c.bind("<ButtonRelease-1>", self.onBoardReleased)
         c.bind("<Motion>", self.onBoardMotion)
         c.bind("<Leave>", self.onBoardLeave)
 
@@ -42,14 +59,12 @@ class GuiBoard:
         app.stopFrame()
         self._stateCanvas = stateCanvas
 
-        self._mouseOver = None
-
     def setPlayers(self, players):
         self._players = players
 
     def resetGame(self):
         for p in self._players:
-            p.resetGame(self._board, self._app)
+            p.resetGame(self._board, self._app, self._gameGui)
         self.redraw()
 
         p = self.currentPlayer()
@@ -76,46 +91,29 @@ class GuiBoard:
     def onBoardClicked(self, event):
         curPlayer = self.currentPlayer()
         if curPlayer != None:
-            pos = self.eventSquare(event)
-            change = curPlayer.onBoardClickedOnTurn(pos)
+            change = curPlayer.onBoardClickedOnTurn(event)
             if change:
                 self.redraw()
 
-    def onBoardDoubleClicked(self, event):
-        pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+    # def onBoardDoubleClicked(self, event):
+    #     pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+    # def onBoardDrag(self, event):
+    #     pass #print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
 
-    def onBoardDrag(self, event):
-        pass #print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
-
-    def onBoardDoubleClicked(self, event):
-        pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
-
-    def onBoardDrag(self, event):
-        pass #print("onBoardDrag(%s; %s,%s)" % (event, event.x, event.y))
-
-    def onBoardDoubleClicked(self, event):
-        self.onBoardClicked(event)
-        pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
+    # def onBoardDoubleClicked(self, event):
+    #     self.onBoardClicked(event)
+    #    pass #print("onBoardDoubleClicked(%d,%d)" % (event.x, event.y))
 
     # def onBoardDrag(self, event):
     #     pass #print("onBoardDrag(%d,%d)" % (event.x, event.y))
-    def onBoardReleased(self, event):
-        pass #print("onBoardReleased(%d,%d)" % (event.x, event.y))
+    # def onBoardReleased(self, event):
+    #     pass #print("onBoardReleased(%d,%d)" % (event.x, event.y))
     def onBoardMotion(self, event):
-        self.setMouseOver(self.eventSquare(event))
+        r = self._gameGui.setMouseOver(event)
+        if r: self.redraw()
     def onBoardLeave(self, event):
-        self.setMouseOver(None)
-
-    def eventSquare(self, event):
-        bx = int(event.x / GuiBoard.SQR_SIZE)
-        by = int(event.y / GuiBoard.SQR_SIZE)
-        return (bx, 7-by)
-
-    def setMouseOver(self, pos):
-        if pos == self._mouseOver:
-            return
-        self._mouseOver = pos
-        self.redraw()
+        r = self._gameGui.setMouseOver(None)
+        if r: self.redraw()
 
     def redraw(self):
         app = self._app
@@ -123,40 +121,7 @@ class GuiBoard:
         app.clearCanvas("c")
 
         self.updateIcon()
-        self._drawBoardBackground()
-        self._drawBoardPieces()
-        self._drawSquareHighlights()
-
-    def _drawBoardBackground(self):
-        size = GuiBoard.SQR_SIZE
-        app = self._app
-
-        for y in xrange(8):
-            for x in xrange(8):
-                parity = ((x+y) & 1) > 0
-                img = Icons.dark_square_img if parity else Icons.light_square_img
-                app.addCanvasImage("c", x*size, y*size,
-                                   img, anchor="nw")
-
-    def _drawBoardPieces(self):
-        size = GuiBoard.SQR_SIZE
-        app = self._app
-
-        for y in xrange(8):
-            for x in xrange(8):
-                b = self._board.get(x, 7-y)
-                if b==None: continue
-                img = b.pawn_img()
-                app.addCanvasImage("c", x*size, y*size,
-                                   img, anchor="nw")
-
-    def _drawSquareHighlights(self):
-        size = GuiBoard.SQR_SIZE
-        app = self._app
-
-        curPlayer = self.currentPlayer()
-        if curPlayer != None:
-            curPlayer.drawHighlightsOnTurn(app, "c", size, self._mouseOver)
+        self._gameGui.drawBoard()
 
     def updateIcon(self):
         app = self._app

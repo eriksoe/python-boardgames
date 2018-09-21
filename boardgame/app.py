@@ -3,11 +3,13 @@ from appJar.appjar import gui
 from board import ChessBoard
 from playercolor import WHITE, BLACK
 from guiboard import GuiBoard
+from chessgui import ChessGui
 from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
 from flatmc_player import FlatMCPlayer
 from mcts_player import MCTSPlayer
 
 app = None
+board_ctor = ChessBoard
 board = None
 guiBoard = None
 
@@ -15,9 +17,11 @@ def startApp():
     global app
     global board
     global guiBoard
+    global gameGui
 
     app = gui("ChromoDynamics", "600x450")
-    board = ChessBoard()
+    board = board_ctor()
+    gameGui = ChessGui(app, "c", board)
 
     guiBoard = createMainWindow(app, board, [None, None])
     guiBoard.redraw()
@@ -48,7 +52,7 @@ def createMainWindow(app, board, players):
     app.startLabelFrame("Board", row=0, column=1)
     app.setSticky("")
 
-    guiboard = GuiBoard(app, board, players)
+    guiboard = GuiBoard(app, gameGui, board, players)
 
     app.stopLabelFrame()
 

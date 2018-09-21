@@ -8,9 +8,10 @@ class Player:
         self.color = color
         self._moveAction = None
 
-    def resetGame(self, board, app):
+    def resetGame(self, board, app, gameGui):
         self._board = board
-        self._app = app
+        self._app = app         # Used by ThreadedPlayer to access threading
+        self._gameGui = gameGui # Used by HumanPlayer to handle GUI
         self._moveAction = None
         self.onResetGame()
     def onResetGame(self): pass # Hook for subclasses
@@ -25,8 +26,7 @@ class Player:
     def onEnterTurn(self): pass # Hook
     def onExitTurn(self): pass # Hook
 
-    def onBoardClickedOnTurn(self, pos): pass # Hook
-    def drawHighlightsOnTurn(self, app, id, size, mouseOver): pass # Hook
+    def onBoardClickedOnTurn(self, event): pass # Hook
 
 class RandomPlayer(Player):
     def __init__(self, color):
@@ -69,42 +69,46 @@ class HumanPlayer(Player):
         Player.__init__(self, color)
         self._from = None
 
-    def onResetGame(self): self._from = None
-    def onEnterTurn(self): self._from = None
-    def onExitTurn(self): self._from = None
+    def onEnterTurn(self):
+        self._gameGui.onEnterTurn(self.color, self._moveAction)
+    def onExitTurn(self):
+        self._gameGui.onExitTurn(self.color)
 
     # Return whether to redraw.
-    def onBoardClickedOnTurn(self, pos):
-        piece = self._board.get(pos[0],pos[1])
-        if self._from == None:
-            # Select
-            if piece == self.color:
-                self._from = pos
-                return True
-        else:
-            theMove = Move(self._from, pos)
-            if theMove in self._board.possibleMoves():
-                self._moveAction(theMove)
-                self._from = None
-                return True
-            else:
-                # Unselect
-                self._from = None
-                return True
+    def onBoardClickedOnTurn(self, event):
+        return self._gameGui.onBoardClicked(self.color, event)
+        # piece = self._board.get(pos[0],pos[1])
+        # if self._from == None:
+        #     # Select
+        #     if piece == self.color:
+        #         self._from = pos
+        #         return True
+        # else:
+        #     theMove = Move(self._from, pos)
+        #     if theMove in self._board.possibleMoves():
+        #         self._moveAction(theMove)
+        #         self._from = None
+        #         return True
+        #     else:
+        #         # Unselect
+        #         self._from = None
+        #         return True
 
-    def drawHighlightsOnTurn(self, app, id, size, mouseOver):
-        if self._from != None:
-            (mx, my) = self._from
-            my = 7-my
-            color = "#ee0"
-            app.addCanvasRectangle(id, mx*size, my*size, size, size,
-                                   width=3, outline=color, fill=None)
-        if mouseOver != None:
-            (mx, my) = mouseOver
-            color = "#090"
-            if self._from != None and Move(self._from, mouseOver) in self._board.possibleMoves():
-                color = "#ee0" # Possible move
-            elif self._board.get(mx, my) == self.color:
-                color = "#cc0" # Possible piece to move
-            app.addCanvasRectangle(id, mx*size, (7-my)*size, size, size,
-                                   width=2, outline=color, fill=None)
+    def drawHighlightsOnTurn(self, id, size, mouseOver):
+        return self._gameGui.drawHighlightsOnTurn(id, size, mouseOver)
+
+        # if self._from != None:
+        #     (mx, my) = self._from
+        #     my = 7-my
+        #     color = "#ee0"
+        #     app.addCanvasRectangle(id, mx*size, my*size, size, size,
+        #                            width=3, outline=color, fill=None)
+        # if mouseOver != None:
+        #     (mx, my) = mouseOver
+        #     color = "#090"
+        #     if self._from != None and Move(self._from, mouseOver) in self._board.possibleMoves():
+        #         color = "#ee0" # Possible move
+        #     elif self._board.get(mx, my) == self.color:
+        #         color = "#cc0" # Possible piece to move
+        #     app.addCanvasRectangle(id, mx*size, (7-my)*size, size, size,
+        #                            width=2, outline=color, fill=None)
