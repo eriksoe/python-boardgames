@@ -2,16 +2,35 @@
 from appJar.appjar import gui
 from board import ChessBoard
 from playercolor import WHITE, BLACK
-from guiboard import GuiBoard
-from chessgui import ChessGui
 from player import Player, HumanPlayer, RandomPlayer, SlowRandomPlayer
 from flatmc_player import FlatMCPlayer
 from mcts_player import MCTSPlayer
 
+from guiboard import GuiBoard
+from chessgui import ChessGui
+
+#from chromo import CDBoard
+#from chromogui import CDGui
+
+class GameSpec:
+    def __init__(self, name, boardCls, guiCls):
+        self.name = name
+        self.boardClass = boardCls
+        self.guiClass = guiCls
+
+PAWNS_ONLY_SPEC = GameSpec("Pawns-only Chess", ChessBoard, ChessGui)
+#CHROMODYNAMICS_SPEC = GameSpec("Chromodynamics", CDBoard, CDGui)
+
+GAME_SPECS = [
+    PAWNS_ONLY_SPEC,
+#    CHROMODYNAMICS_SPEC
+]
+
 app = None
-board_ctor = ChessBoard
+board_ctor = None#ChessBoard
 board = None
 guiBoard = None
+gameGui = None
 
 def startApp():
     global app
@@ -20,14 +39,15 @@ def startApp():
     global gameGui
 
     app = gui("ChromoDynamics", "600x450")
-    board = board_ctor()
-    gameGui = ChessGui(app, "c", board)
+    # selectPawnsOnlyAction()
+    #board = board_ctor()
+    #gameGui = ChessGui(app, "c", board)
 
-    guiBoard = createMainWindow(app, board, [None, None])
+    guiBoard = createMainWindow(app, [None, None])
     guiBoard.redraw()
     app.go()
 
-def createMainWindow(app, board, players):
+def createMainWindow(app, players):
     app.startFrame("MENU", row=0, column=0)
     app.setBg("#ddd")
     app.setSticky("NEW")
@@ -45,13 +65,25 @@ def createMainWindow(app, board, players):
     app.addLabel("l2a", "") # Spacer
     #app.addHorizontalSeparator()
     app.setPadding((0,0))
-    app.addLabel("l2", "Other Options")
+
+    app.addLabel("l2", "Games")
+    for g in GAME_SPECS:
+        action = lambda btnLabel, game=g: selectGame(game)
+        app.addButton(g.name, action)
+        
+    app.setPadding((0,5))
+    app.addLabel("l3a", "") # Spacer
+    app.setPadding((0,0))
+
+    app.addLabel("l3", "Other Options")
     app.addButton("Quit", quitAction)
     app.stopFrame()
 
     app.startLabelFrame("Board", row=0, column=1)
     app.setSticky("")
 
+    selectGame(PAWNS_ONLY_SPEC)
+    print "createMainWindow: board=%r" % (board,)
     guiboard = GuiBoard(app, gameGui, board, players)
 
     app.stopLabelFrame()
@@ -60,6 +92,21 @@ def createMainWindow(app, board, players):
 
 def quitAction():
     app.stop()
+
+def selectGame(spec):
+    print "selectGame: %r" % (spec,)
+    new_board_ctor = spec.boardClass
+    new_gui_ctor =  spec.guiClass
+    
+    global board, board_ctor, gameGui
+    if board_ctor == new_board_ctor:
+        return
+    board_ctor = new_board_ctor
+    board = board_ctor()
+    gameGui = new_gui_ctor(app, "c", board)
+    if guiBoard != None:
+        guiBoard.setGame(gameGui, board)
+        guiBoard.redraw()
 
 def new2PGameAction(btn):
     setupBoard(HumanPlayer, HumanPlayer)

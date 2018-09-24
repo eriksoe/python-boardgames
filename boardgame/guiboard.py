@@ -62,6 +62,10 @@ class GuiBoard:
     def setPlayers(self, players):
         self._players = players
 
+    def setGame(self, gameGui, board):
+        self._gameGui = gameGui
+        self._board = board
+
     def resetGame(self):
         for p in self._players:
             p.resetGame(self._board, self._app, self._gameGui)
