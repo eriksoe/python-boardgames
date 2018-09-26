@@ -9,8 +9,8 @@ from mcts_player import MCTSPlayer
 from guiboard import GuiBoard
 from chessgui import ChessGui
 
-#from chromo import CDBoard
-#from chromogui import CDGui
+from chromo import CDBoard
+from chromogui import CDGui
 
 class GameSpec:
     def __init__(self, name, boardCls, guiCls):
@@ -19,11 +19,11 @@ class GameSpec:
         self.guiClass = guiCls
 
 PAWNS_ONLY_SPEC = GameSpec("Pawns-only Chess", ChessBoard, ChessGui)
-#CHROMODYNAMICS_SPEC = GameSpec("Chromodynamics", CDBoard, CDGui)
+CHROMODYNAMICS_SPEC = GameSpec("Chromodynamics", CDBoard, CDGui)
 
 GAME_SPECS = [
     PAWNS_ONLY_SPEC,
-#    CHROMODYNAMICS_SPEC
+    CHROMODYNAMICS_SPEC
 ]
 
 app = None
